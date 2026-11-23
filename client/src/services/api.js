@@ -1,5 +1,25 @@
 // API client for communicating with CivicConnect Backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const getApiBaseUrl = () => {
+  let base = import.meta.env.VITE_API_URL;
+  if (!base || !base.trim()) {
+    // In local development with Vite proxy, use /api
+    if (
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ) {
+      return '/api';
+    }
+    // In production (Vercel / Cloud), connect directly to live Render backend
+    return 'https://civicconnect-api-shuf.onrender.com/api';
+  }
+  base = base.trim().replace(/\/+$/, '');
+  if (!base.endsWith('/api') && !base.includes('/api/')) {
+    base = `${base}/api`;
+  }
+  return base;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Helper to make authorized HTTP requests using standard Fetch API
 export const apiRequest = async (endpoint, options = {}) => {
@@ -28,7 +48,15 @@ export const apiRequest = async (endpoint, options = {}) => {
       headers,
     });
 
-    const data = await response.json().catch(() => ({}));
+    // Handle JSON or plain text gracefully
+    const contentType = response.headers.get('content-type') || '';
+    let data = {};
+    if (contentType.includes('application/json')) {
+      data = await response.json().catch(() => ({}));
+    } else {
+      const text = await response.text().catch(() => '');
+      data = { message: text || `HTTP ${response.status} response` };
+    }
 
     if (!response.ok) {
       const errorMessage = data.message || `Request failed with status ${response.status}`;

@@ -252,5 +252,28 @@ This project adheres to university and collegiate Web Technology practical curri
 
 ---
 
+## 🌐 Live Deployments & Project Links
+
+| Resource | Live Link | Status / Description |
+|---|---|---|
+| 🌐 **Live Web Application** | [https://civicconnect-frontend-ten.vercel.app](https://civicconnect-frontend-ten.vercel.app) | Production SPA deployed on Vercel |
+| ⚙️ **Backend REST API** | [https://civicconnect-api-shuf.onrender.com](https://civicconnect-api-shuf.onrender.com) | Production Node.js & Express API on Render |
+| 📊 **API Categories Endpoint** | [https://civicconnect-api-shuf.onrender.com/api/categories](https://civicconnect-api-shuf.onrender.com/api/categories) | Live REST endpoint returning categories |
+| 📈 **API Dashboard Analytics** | [https://civicconnect-api-shuf.onrender.com/api/stats/dashboard](https://civicconnect-api-shuf.onrender.com/api/stats/dashboard) | Aggregated citywide grievance metrics |
+| 🐙 **GitHub Repository** | [https://github.com/omkumar-rajput/CivicConnect](https://github.com/omkumar-rajput/CivicConnect) | Official full-stack source code repository |
+| 📑 **Demonstration & Evaluation Report** | [CivicConnect_Demonstration_Report.pdf](CivicConnect_Demonstration_Report.pdf) | Comprehensive 10-section demonstration report |
+
+### 🔐 Quick Evaluation Credentials
+| Portal | Test Email | Password | Role |
+|---|---|---|---|
+| **Administrator** | `admin@civicconnect.com` | `admin123` | City Administration & Officer Assignment |
+| **Municipal Officer (Roads)** | `officer.roads@civicconnect.com` | `officer123` | Roads & Infrastructure Wing |
+| **Municipal Officer (Sanitation)** | `officer.sanitation@civicconnect.com` | `officer123` | Sanitation & Solid Waste Wing |
+| **Citizen** | `citizen@example.com` | `citizen123` | Grievance Lodging & Rating |
+
+*(Tip: The Sign In page also includes one-click demo autofill buttons for fast presentation!)*
+
+---
+
 ## 📄 License
 This project is developed for educational and academic evaluation purposes.

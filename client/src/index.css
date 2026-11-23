@@ -1,0 +1,296 @@
+/* CivicConnect - Clean Light Civic Theme CSS */
+:root {
+  --civic-primary: #0284c7;
+  --civic-primary-dark: #0369a1;
+  --civic-primary-light: #e0f2fe;
+  --civic-navy: #0f172a;
+  --civic-bg: #f8fafc;
+  --civic-card-bg: #ffffff;
+  --civic-border: #e2e8f0;
+  --civic-text: #1e293b;
+  --civic-text-muted: #64748b;
+  --civic-success: #10b981;
+  --civic-warning: #f59e0b;
+  --civic-danger: #ef4444;
+  --civic-info: #06b6d4;
+  --civic-radius: 12px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--civic-bg);
+  color: var(--civic-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar-civic {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--civic-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 0;
+}
+
+.navbar-brand-civic {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: var(--civic-navy);
+  text-decoration: none;
+}
+
+.navbar-brand-civic .brand-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, var(--civic-primary), #0284c7);
+  color: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.brand-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.2rem 0.5rem;
+  background-color: var(--civic-primary-light);
+  color: var(--civic-primary-dark);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Cards & Layout */
+.civic-card {
+  background-color: var(--civic-card-bg);
+  border: 1px solid var(--civic-border);
+  border-radius: var(--civic-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.civic-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+}
+
+/* Buttons */
+.btn-civic-primary {
+  background-color: var(--civic-primary);
+  border-color: var(--civic-primary);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.btn-civic-primary:hover, .btn-civic-primary:focus {
+  background-color: var(--civic-primary-dark);
+  border-color: var(--civic-primary-dark);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.btn-civic-outline {
+  border: 1.5px solid var(--civic-border);
+  color: var(--civic-text);
+  background-color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+}
+
+.btn-civic-outline:hover {
+  border-color: var(--civic-primary);
+  color: var(--civic-primary);
+  background-color: var(--civic-primary-light);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--civic-border);
+  padding: 4rem 0 3rem;
+}
+
+/* Status Badges */
+.badge-submitted {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+
+.badge-pending {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.badge-assigned {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-in-progress {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-resolved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Priority Badges */
+.priority-low {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+.priority-medium {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+.priority-high {
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+.priority-urgent {
+  background-color: #ffe4e6;
+  color: #be123c;
+  font-weight: 700;
+}
+
+/* Timeline */
+.workflow-stepper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+.workflow-stepper::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background-color: #e2e8f0;
+  z-index: 1;
+}
+
+.workflow-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.workflow-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 3px solid #cbd5e1;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+}
+
+.workflow-step.completed .workflow-circle {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.workflow-step.active .workflow-circle {
+  background-color: var(--civic-primary);
+  border-color: var(--civic-primary);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
+}
+
+.workflow-label {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.workflow-step.completed .workflow-label,
+.workflow-step.active .workflow-label {
+  color: var(--civic-navy);
+}
+
+/* Star Rating */
+.star-rating {
+  display: inline-flex;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.star-rating i {
+  font-size: 1.5rem;
+  color: #cbd5e1;
+  transition: color 0.15s ease;
+}
+
+.star-rating i.filled {
+  color: #f59e0b;
+}
+
+/* Stat Card */
+.stat-widget {
+  padding: 1.25rem;
+  border-radius: var(--civic-radius);
+  background: white;
+  border: 1px solid var(--civic-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+/* Footer */
+.footer-civic {
+  background-color: #ffffff;
+  border-top: 1px solid var(--civic-border);
+  padding: 2rem 0;
+  margin-top: auto;
+  color: var(--civic-text-muted);
+  font-size: 0.9rem;
+}

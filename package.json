@@ -1,0 +1,22 @@
+{
+  "name": "civicconnect",
+  "version": "1.0.0",
+  "description": "CivicConnect - Smart Public Grievance Management System (MERN)",
+  "scripts": {
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "seed": "cd server && npm run seed",
+    "install:server": "cd server && npm install",
+    "install:client": "cd client && npm install"
+  },
+  "keywords": [
+    "grievance-system",
+    "mern",
+    "react",
+    "express",
+    "mongodb",
+    "bootstrap5"
+  ],
+  "author": "Om Kumar",
+  "license": "ISC"
+}

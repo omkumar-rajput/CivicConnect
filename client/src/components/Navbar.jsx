@@ -1,21 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = () => {
+    setDropdownOpen(false);
     logout();
     navigate('/login');
   };
+
+  const displayName = user?.name ? user.name.split(' ')[0] : 'User';
+  const roleDisplay = user?.role ? user.role.toUpperCase() : 'USER';
 
   return (
     <nav className="navbar navbar-expand-lg navbar-civic sticky-top">
       <div className="container">
         {/* Brand Logo */}
-        <Link className="navbar-brand-civic" to="/">
+        <Link className="navbar-brand-civic" to="/" onClick={() => setDropdownOpen(false)}>
           <div className="brand-icon">
             <i className="bi bi-buildings"></i>
           </div>
@@ -43,7 +48,11 @@ const Navbar = () => {
         <div className="collapse navbar-collapse" id="civicNavbar">
           <ul className="navbar-nav ms-auto align-items-lg-center gap-1 gap-lg-2 mt-3 mt-lg-0">
             <li className="nav-item">
-              <Link className="nav-link fw-semibold text-secondary px-3" to="/">
+              <Link
+                className="nav-link fw-semibold text-secondary px-3"
+                to="/"
+                onClick={() => setDropdownOpen(false)}
+              >
                 <i className="bi bi-house me-1"></i> Home
               </Link>
             </li>
@@ -54,12 +63,20 @@ const Navbar = () => {
                 {user?.role === 'citizen' && (
                   <>
                     <li className="nav-item">
-                      <Link className="nav-link fw-semibold text-secondary px-3" to="/citizen/dashboard">
+                      <Link
+                        className="nav-link fw-semibold text-secondary px-3"
+                        to="/citizen/dashboard"
+                        onClick={() => setDropdownOpen(false)}
+                      >
                         <i className="bi bi-grid me-1"></i> My Complaints
                       </Link>
                     </li>
                     <li className="nav-item">
-                      <Link className="btn btn-civic-primary btn-sm px-3 ms-lg-2" to="/complaint/new">
+                      <Link
+                        className="btn btn-civic-primary btn-sm px-3 ms-lg-2"
+                        to="/complaint/new"
+                        onClick={() => setDropdownOpen(false)}
+                      >
                         <i className="bi bi-plus-circle me-1"></i> Lodge Complaint
                       </Link>
                     </li>
@@ -69,7 +86,11 @@ const Navbar = () => {
                 {/* Officer Navigation Links */}
                 {user?.role === 'officer' && (
                   <li className="nav-item">
-                    <Link className="nav-link fw-semibold text-secondary px-3" to="/officer/dashboard">
+                    <Link
+                      className="nav-link fw-semibold text-secondary px-3"
+                      to="/officer/dashboard"
+                      onClick={() => setDropdownOpen(false)}
+                    >
                       <i className="bi bi-speedometer2 me-1"></i> Officer Dashboard
                     </Link>
                   </li>
@@ -78,29 +99,38 @@ const Navbar = () => {
                 {/* Admin Navigation Links */}
                 {user?.role === 'admin' && (
                   <li className="nav-item">
-                    <Link className="nav-link fw-semibold text-secondary px-3" to="/admin/dashboard">
+                    <Link
+                      className="nav-link fw-semibold text-secondary px-3"
+                      to="/admin/dashboard"
+                      onClick={() => setDropdownOpen(false)}
+                    >
                       <i className="bi bi-shield-check me-1"></i> Admin Portal
                     </Link>
                   </li>
                 )}
 
-                {/* User Dropdown / Profile Badge */}
-                <li className="nav-item dropdown ms-lg-2">
+                {/* User Dropdown / Profile Badge (Controlled with React State) */}
+                <li className="nav-item dropdown ms-lg-2 position-relative">
                   <button
                     className="btn btn-civic-outline btn-sm dropdown-toggle d-flex align-items-center gap-2"
                     type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    aria-expanded={dropdownOpen}
                   >
                     <i className="bi bi-person-circle fs-6 text-primary"></i>
-                    <span>{user?.name?.split(' ')[0]}</span>
+                    <span>{displayName}</span>
                     <span className="badge bg-light text-dark border ms-1" style={{ fontSize: '0.65rem' }}>
-                      {user?.role?.toUpperCase()}
+                      {roleDisplay}
                     </span>
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+                  <ul
+                    className={`dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 ${
+                      dropdownOpen ? 'show' : ''
+                    }`}
+                    style={{ position: 'absolute', right: 0 }}
+                  >
                     <li className="px-3 py-2 border-bottom">
-                      <div className="fw-bold">{user?.name}</div>
+                      <div className="fw-bold">{user?.name || 'Account'}</div>
                       <div className="text-muted small">{user?.email}</div>
                       {user?.department && (
                         <div className="badge bg-info-subtle text-info-emphasis mt-1 small">

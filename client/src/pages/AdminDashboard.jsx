@@ -9,6 +9,17 @@ import {
 } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 
+const formatDate = (val) => {
+  if (!val) return 'N/A';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  } catch (e) {
+    return String(val);
+  }
+};
+
 const AdminDashboard = () => {
   const { user } = useAuth();
 
@@ -55,7 +66,7 @@ const AdminDashboard = () => {
       setError('');
 
       const [statsRes, complaintsRes, officersRes, categoriesRes, citizensRes] =
-        await Promise.all([
+        await Promise.allSettled([
           statsService.getStats(),
           complaintService.getAll(),
           userService.getAll('officer'),
@@ -63,11 +74,21 @@ const AdminDashboard = () => {
           userService.getAll('citizen'),
         ]);
 
-      if (statsRes.success) setStats(statsRes.stats);
-      if (complaintsRes.success) setComplaints(complaintsRes.complaints || []);
-      if (officersRes.success) setOfficers(officersRes.users || []);
-      if (categoriesRes.success) setCategories(categoriesRes.categories || []);
-      if (citizensRes.success) setCitizens(citizensRes.users || []);
+      if (statsRes.status === 'fulfilled' && statsRes.value?.success) {
+        setStats(statsRes.value.stats);
+      }
+      if (complaintsRes.status === 'fulfilled' && complaintsRes.value?.success) {
+        setComplaints(complaintsRes.value.complaints || []);
+      }
+      if (officersRes.status === 'fulfilled' && officersRes.value?.success) {
+        setOfficers(officersRes.value.users || []);
+      }
+      if (categoriesRes.status === 'fulfilled' && categoriesRes.value?.success) {
+        setCategories(categoriesRes.value.categories || []);
+      }
+      if (citizensRes.status === 'fulfilled' && citizensRes.value?.success) {
+        setCitizens(citizensRes.value.users || []);
+      }
     } catch (err) {
       setError(err.message || 'Failed to load administrative console data');
     } finally {
@@ -90,7 +111,7 @@ const AdminDashboard = () => {
         assignModal.officerId,
         assignModal.remarks
       );
-      if (res.success) {
+      if (res && res.success) {
         setSuccessMsg(`Complaint assigned successfully to officer!`);
         setAssignModal({ open: false, complaint: null, officerId: '', remarks: '' });
         loadDashboardData();
@@ -111,7 +132,7 @@ const AdminDashboard = () => {
         department: newOfficerModal.department,
         phone: newOfficerModal.phone,
       });
-      if (res.success) {
+      if (res && res.success) {
         setSuccessMsg(`Municipal Officer ${newOfficerModal.name} created successfully!`);
         setNewOfficerModal({
           open: false,
@@ -133,7 +154,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const res = await categoryService.create(newCategoryModal);
-      if (res.success) {
+      if (res && res.success) {
         setSuccessMsg(`Category "${newCategoryModal.name}" added successfully!`);
         setNewCategoryModal({
           open: false,
@@ -154,7 +175,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to remove this category?')) return;
     try {
       const res = await categoryService.delete(catId);
-      if (res.success) {
+      if (res && res.success) {
         setSuccessMsg('Category removed successfully');
         loadDashboardData();
       }
@@ -168,7 +189,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this grievance ticket?')) return;
     try {
       const res = await complaintService.delete(complaintId);
-      if (res.success) {
+      if (res && res.success) {
         setSuccessMsg('Grievance ticket deleted successfully');
         loadDashboardData();
       }
@@ -177,15 +198,18 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filter complaints
-  const filteredComplaints = complaints.filter((c) => {
+  // Filter complaints safely
+  const filteredComplaints = (complaints || []).filter((c) => {
+    if (!c) return false;
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
     const matchesCategory = categoryFilter === 'All' || c.category === categoryFilter;
+    const searchLower = (searchTerm || '').trim().toLowerCase();
     const matchesSearch =
-      searchTerm === '' ||
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.complaintId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.location?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+      searchLower === '' ||
+      (c.title && c.title.toLowerCase().includes(searchLower)) ||
+      (c.complaintId && c.complaintId.toLowerCase().includes(searchLower)) ||
+      (c.category && c.category.toLowerCase().includes(searchLower)) ||
+      (c.location?.address && c.location.address.toLowerCase().includes(searchLower));
     return matchesStatus && matchesCategory && matchesSearch;
   });
 
@@ -240,7 +264,7 @@ const AdminDashboard = () => {
             className={`nav-link fw-semibold ${activeTab === 'complaints' ? 'active' : 'text-secondary'}`}
             onClick={() => setActiveTab('complaints')}
           >
-            <i className="bi bi-list-check me-1"></i> All Grievances ({complaints.length})
+            <i className="bi bi-list-check me-1"></i> All Grievances ({(complaints || []).length})
           </button>
         </li>
         <li className="nav-item">
@@ -248,7 +272,7 @@ const AdminDashboard = () => {
             className={`nav-link fw-semibold ${activeTab === 'officers' ? 'active' : 'text-secondary'}`}
             onClick={() => setActiveTab('officers')}
           >
-            <i className="bi bi-person-gear me-1"></i> Municipal Officers ({officers.length})
+            <i className="bi bi-person-gear me-1"></i> Municipal Officers ({(officers || []).length})
           </button>
         </li>
         <li className="nav-item">
@@ -256,7 +280,7 @@ const AdminDashboard = () => {
             className={`nav-link fw-semibold ${activeTab === 'categories' ? 'active' : 'text-secondary'}`}
             onClick={() => setActiveTab('categories')}
           >
-            <i className="bi bi-tags me-1"></i> Categories ({categories.length})
+            <i className="bi bi-tags me-1"></i> Categories ({(categories || []).length})
           </button>
         </li>
         <li className="nav-item">
@@ -264,7 +288,7 @@ const AdminDashboard = () => {
             className={`nav-link fw-semibold ${activeTab === 'citizens' ? 'active' : 'text-secondary'}`}
             onClick={() => setActiveTab('citizens')}
           >
-            <i className="bi bi-people me-1"></i> Registered Citizens ({citizens.length})
+            <i className="bi bi-people me-1"></i> Registered Citizens ({(citizens || []).length})
           </button>
         </li>
       </ul>
@@ -278,7 +302,7 @@ const AdminDashboard = () => {
               <div className="stat-widget">
                 <div>
                   <div className="text-muted small fw-semibold">Total Grievances</div>
-                  <div className="fs-3 fw-bold text-dark">{stats?.total || complaints.length}</div>
+                  <div className="fs-3 fw-bold text-dark">{stats?.total ?? (complaints || []).length}</div>
                 </div>
                 <div className="stat-icon bg-primary-subtle text-primary">
                   <i className="bi bi-folder2"></i>
@@ -289,7 +313,7 @@ const AdminDashboard = () => {
               <div className="stat-widget">
                 <div>
                   <div className="text-muted small fw-semibold">Pending / Unassigned</div>
-                  <div className="fs-3 fw-bold text-danger">{stats?.pending || 0}</div>
+                  <div className="fs-3 fw-bold text-danger">{stats?.pending ?? 0}</div>
                 </div>
                 <div className="stat-icon bg-danger-subtle text-danger">
                   <i className="bi bi-exclamation-triangle"></i>
@@ -300,7 +324,7 @@ const AdminDashboard = () => {
               <div className="stat-widget">
                 <div>
                   <div className="text-muted small fw-semibold">In Progress Repairs</div>
-                  <div className="fs-3 fw-bold text-warning">{stats?.inProgress || 0}</div>
+                  <div className="fs-3 fw-bold text-warning">{stats?.inProgress ?? 0}</div>
                 </div>
                 <div className="stat-icon bg-warning-subtle text-warning">
                   <i className="bi bi-gear"></i>
@@ -311,9 +335,9 @@ const AdminDashboard = () => {
               <div className="stat-widget">
                 <div>
                   <div className="text-muted small fw-semibold">Resolved Cases</div>
-                  <div className="fs-3 fw-bold text-success">{stats?.resolved || 0}</div>
+                  <div className="fs-3 fw-bold text-success">{stats?.resolved ?? 0}</div>
                   <small className="text-muted" style={{ fontSize: '0.72rem' }}>
-                    {stats?.resolutionRate || 0}% Redressal Rate
+                    {stats?.resolutionRate ?? 0}% Redressal Rate
                   </small>
                 </div>
                 <div className="stat-icon bg-success-subtle text-success">
@@ -330,17 +354,18 @@ const AdminDashboard = () => {
                 <h5 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
                   <i className="bi bi-pie-chart-fill text-primary"></i> Complaints by Category
                 </h5>
-                {stats?.byCategory && stats.byCategory.length > 0 ? (
+                {stats?.byCategory && Array.isArray(stats.byCategory) && stats.byCategory.length > 0 ? (
                   <div className="d-flex flex-column gap-3">
                     {stats.byCategory.map((cat, idx) => {
-                      const percentage =
-                        stats.total > 0 ? Math.round((cat.count / stats.total) * 100) : 0;
+                      if (!cat) return null;
+                      const totalCount = stats.total || 1;
+                      const percentage = Math.round(((cat.count || 0) / totalCount) * 100);
                       return (
                         <div key={idx}>
                           <div className="d-flex justify-content-between small fw-semibold mb-1">
-                            <span className="text-dark">{cat.category}</span>
+                            <span className="text-dark">{cat.category || 'General'}</span>
                             <span className="text-muted">
-                              {cat.count} issues ({percentage}%)
+                              {cat.count || 0} issues ({percentage}%)
                             </span>
                           </div>
                           <div className="progress" style={{ height: '7px' }}>
@@ -365,19 +390,22 @@ const AdminDashboard = () => {
                 <h5 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
                   <i className="bi bi-diagram-3-fill text-success"></i> Complaints by Status Lifecycle
                 </h5>
-                {stats?.byStatus && stats.byStatus.length > 0 ? (
+                {stats?.byStatus && Array.isArray(stats.byStatus) && stats.byStatus.length > 0 ? (
                   <div className="row g-2">
-                    {stats.byStatus.map((item, idx) => (
-                      <div key={idx} className="col-sm-6">
-                        <div className="p-3 rounded-3 border bg-light d-flex justify-content-between align-items-center">
-                          <div>
-                            <div className="text-muted small fw-semibold">{item.status}</div>
-                            <div className="fs-4 fw-bold text-dark">{item.count}</div>
+                    {stats.byStatus.map((item, idx) => {
+                      if (!item) return null;
+                      return (
+                        <div key={idx} className="col-sm-6">
+                          <div className="p-3 rounded-3 border bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                              <div className="text-muted small fw-semibold">{item.status || 'Status'}</div>
+                              <div className="fs-4 fw-bold text-dark">{item.count || 0}</div>
+                            </div>
+                            <StatusBadge status={item.status} />
                           </div>
-                          <StatusBadge status={item.status} />
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-muted small py-4 text-center">No status data yet.</div>
@@ -429,7 +457,7 @@ const AdminDashboard = () => {
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
                   <option value="All">All Categories</option>
-                  {categories.map((c) => (
+                  {(categories || []).map((c) => (
                     <option key={c._id} value={c.name}>
                       {c.name}
                     </option>
@@ -455,34 +483,46 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredComplaints.map((item) => (
+                  {(filteredComplaints || []).map((item) => (
                     <tr key={item._id}>
                       <td>
-                        <span className="fw-bold text-primary">{item.complaintId}</span>
+                        <span className="fw-bold text-primary">{item.complaintId || 'CC-NEW'}</span>
                       </td>
                       <td>
-                        <div className="fw-semibold text-dark">{item.title}</div>
+                        <div className="fw-semibold text-dark">{item.title || 'Untitled Complaint'}</div>
                         <small className="text-muted d-block text-truncate" style={{ maxWidth: '240px' }}>
                           <i className="bi bi-geo-alt text-danger me-1"></i>
-                          {item.location?.address}
+                          {item.location?.address || 'Address provided'}
                         </small>
                       </td>
                       <td>
                         <span className="badge bg-secondary-subtle text-secondary small">
-                          {item.category}
+                          {item.category || 'General'}
                         </span>
                       </td>
                       <td>
-                        <div className="small fw-semibold">{item.citizen?.name || 'Citizen'}</div>
-                        <small className="text-muted">{item.citizen?.phone || item.citizen?.email}</small>
+                        <div className="small fw-semibold">
+                          {typeof item.citizen === 'object' ? item.citizen.name : 'Citizen'}
+                        </div>
+                        <small className="text-muted">
+                          {typeof item.citizen === 'object'
+                            ? item.citizen.phone || item.citizen.email
+                            : ''}
+                        </small>
                       </td>
                       <td>
                         {item.assignedOfficer ? (
                           <div className="small">
                             <span className="badge bg-info-subtle text-info-emphasis d-block mb-1">
-                              {item.assignedOfficer.name}
+                              {typeof item.assignedOfficer === 'object'
+                                ? item.assignedOfficer.name
+                                : 'Assigned Officer'}
                             </span>
-                            <small className="text-muted">{item.assignedOfficer.department}</small>
+                            <small className="text-muted">
+                              {typeof item.assignedOfficer === 'object'
+                                ? item.assignedOfficer.department
+                                : ''}
+                            </small>
                           </div>
                         ) : (
                           <span className="badge bg-warning-subtle text-warning-emphasis">
@@ -550,7 +590,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="row g-3">
-            {officers.map((off) => (
+            {(officers || []).map((off) => (
               <div key={off._id} className="col-lg-4 col-md-6">
                 <div className="civic-card p-4 bg-white h-100">
                   <div className="d-flex justify-content-between align-items-start mb-2">
@@ -599,7 +639,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="row g-3">
-            {categories.map((cat) => (
+            {(categories || []).map((cat) => (
               <div key={cat._id} className="col-lg-4 col-md-6">
                 <div className="civic-card p-4 bg-white h-100 d-flex flex-column justify-content-between">
                   <div>
@@ -645,7 +685,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {citizens.map((c) => (
+                {(citizens || []).map((c) => (
                   <tr key={c._id}>
                     <td>
                       <div className="fw-semibold text-dark">{c.name}</div>
@@ -653,7 +693,7 @@ const AdminDashboard = () => {
                     <td>{c.email}</td>
                     <td>{c.phone || 'N/A'}</td>
                     <td className="small text-muted">
-                      {new Date(c.createdAt).toLocaleDateString()}
+                      {formatDate(c.createdAt)}
                     </td>
                     <td>
                       <span className="badge bg-success-subtle text-success">Active</span>
@@ -677,7 +717,7 @@ const AdminDashboard = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title fw-bold">
-                  Assign Officer to {assignModal.complaint?.complaintId}
+                  Assign Officer to {assignModal.complaint?.complaintId || 'Complaint'}
                 </h5>
                 <button
                   type="button"
@@ -703,7 +743,7 @@ const AdminDashboard = () => {
                       required
                     >
                       <option value="">-- Choose Field Officer --</option>
-                      {officers.map((off) => (
+                      {(officers || []).map((off) => (
                         <option key={off._id} value={off._id}>
                           {off.name} ({off.department})
                         </option>

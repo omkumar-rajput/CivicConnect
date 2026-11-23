@@ -16,15 +16,18 @@ export const AuthProvider = ({ children }) => {
 
       if (storedToken && storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          if (parsed && typeof parsed === 'object') {
+            setUser(parsed);
+          }
           // Verify with backend
           const res = await authService.getMe();
-          if (res.success && res.user) {
+          if (res && res.success && res.user) {
             setUser(res.user);
             localStorage.setItem('civic_user', JSON.stringify(res.user));
           }
         } catch (error) {
-          console.warn('[AuthContext] Session expired, clearing storage');
+          console.warn('[AuthContext] Session invalid or expired, clearing storage');
           localStorage.removeItem('civic_token');
           localStorage.removeItem('civic_user');
           setUser(null);
@@ -40,27 +43,27 @@ export const AuthProvider = ({ children }) => {
   // Login handler
   const login = async (email, password) => {
     const res = await authService.login({ email, password });
-    if (res.success) {
+    if (res && res.success && res.token && res.user) {
       localStorage.setItem('civic_token', res.token);
       localStorage.setItem('civic_user', JSON.stringify(res.user));
       setToken(res.token);
       setUser(res.user);
       return res.user;
     }
-    throw new Error(res.message || 'Login failed');
+    throw new Error(res?.message || 'Login failed');
   };
 
   // Register handler
   const register = async (userData) => {
     const res = await authService.register(userData);
-    if (res.success) {
+    if (res && res.success && res.token && res.user) {
       localStorage.setItem('civic_token', res.token);
       localStorage.setItem('civic_user', JSON.stringify(res.user));
       setToken(res.token);
       setUser(res.user);
       return res.user;
     }
-    throw new Error(res.message || 'Registration failed');
+    throw new Error(res?.message || 'Registration failed');
   };
 
   // Logout handler

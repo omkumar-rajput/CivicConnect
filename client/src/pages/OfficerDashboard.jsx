@@ -23,16 +23,20 @@ const OfficerDashboard = () => {
   const fetchComplaints = async () => {
     try {
       setLoading(true);
+      setError('');
       const params = {};
       if (onlyMyTasks) {
         params.assignedToMe = 'true';
       }
       const res = await complaintService.getAll(params);
-      if (res.success) {
+      if (res && res.success) {
         setComplaints(res.complaints || []);
+      } else {
+        setComplaints([]);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch complaints');
+      setComplaints([]);
     } finally {
       setLoading(false);
     }
@@ -44,7 +48,11 @@ const OfficerDashboard = () => {
 
   const handleOpenStatusModal = (complaint) => {
     setSelectedComplaint(complaint);
-    setModalStatus(complaint.status === 'Submitted' || complaint.status === 'Assigned' ? 'In Progress' : complaint.status);
+    setModalStatus(
+      complaint.status === 'Submitted' || complaint.status === 'Assigned'
+        ? 'In Progress'
+        : complaint.status || 'In Progress'
+    );
     setModalRemarks('');
     setError('');
   };
@@ -60,8 +68,10 @@ const OfficerDashboard = () => {
         modalStatus,
         modalRemarks
       );
-      if (res.success) {
-        setActionSuccess(`Ticket ${selectedComplaint.complaintId} updated to ${modalStatus}!`);
+      if (res && res.success) {
+        setActionSuccess(
+          `Ticket ${selectedComplaint.complaintId || ''} updated to ${modalStatus}!`
+        );
         setSelectedComplaint(null);
         fetchComplaints();
       }
@@ -72,21 +82,23 @@ const OfficerDashboard = () => {
     }
   };
 
-  // Filter complaints
-  const filtered = complaints.filter((c) => {
+  // Filter complaints safely
+  const filtered = (complaints || []).filter((c) => {
+    if (!c) return false;
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+    const searchLower = (searchTerm || '').trim().toLowerCase();
     const matchesSearch =
-      searchTerm === '' ||
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.complaintId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.location?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+      searchLower === '' ||
+      (c.title && c.title.toLowerCase().includes(searchLower)) ||
+      (c.complaintId && c.complaintId.toLowerCase().includes(searchLower)) ||
+      (c.category && c.category.toLowerCase().includes(searchLower)) ||
+      (c.location?.address && c.location.address.toLowerCase().includes(searchLower));
     return matchesStatus && matchesSearch;
   });
 
-  const assignedCount = complaints.filter((c) => c.status === 'Assigned').length;
-  const inProgressCount = complaints.filter((c) => c.status === 'In Progress').length;
-  const resolvedCount = complaints.filter((c) => c.status === 'Resolved').length;
+  const assignedCount = (complaints || []).filter((c) => c && c.status === 'Assigned').length;
+  const inProgressCount = (complaints || []).filter((c) => c && c.status === 'In Progress').length;
+  const resolvedCount = (complaints || []).filter((c) => c && c.status === 'Resolved').length;
 
   return (
     <div className="container py-4">
@@ -96,7 +108,7 @@ const OfficerDashboard = () => {
           <span className="badge bg-warning-subtle text-warning-emphasis border mb-1">
             Municipal Officer Console
           </span>
-          <h2 className="fw-bold text-dark mb-1">{user?.name}</h2>
+          <h2 className="fw-bold text-dark mb-1">{user?.name || 'Officer'}</h2>
           <p className="text-secondary small mb-0">
             Department: <strong className="text-dark">{user?.department || 'Field Operations'}</strong> &bull; Manage assigned civic repair orders
           </p>
@@ -118,7 +130,10 @@ const OfficerDashboard = () => {
       </div>
 
       {actionSuccess && (
-        <div className="alert alert-success alert-dismissible fade show small d-flex align-items-center gap-2 mb-3" role="alert">
+        <div
+          className="alert alert-success alert-dismissible fade show small d-flex align-items-center gap-2 mb-3"
+          role="alert"
+        >
           <i className="bi bi-check-circle-fill fs-5"></i>
           <div>{actionSuccess}</div>
           <button type="button" className="btn-close" onClick={() => setActionSuccess('')}></button>
@@ -185,7 +200,7 @@ const OfficerDashboard = () => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="All">All Statuses ({complaints.length})</option>
+              <option value="All">All Statuses ({(complaints || []).length})</option>
               <option value="Assigned">Assigned</option>
               <option value="In Progress">In Progress</option>
               <option value="Resolved">Resolved</option>
@@ -235,22 +250,24 @@ const OfficerDashboard = () => {
                 {filtered.map((item) => (
                   <tr key={item._id}>
                     <td>
-                      <span className="fw-bold text-primary">{item.complaintId}</span>
+                      <span className="fw-bold text-primary">{item.complaintId || 'CC-NEW'}</span>
                     </td>
                     <td>
-                      <div className="fw-semibold text-dark">{item.title}</div>
+                      <div className="fw-semibold text-dark">{item.title || 'Untitled Issue'}</div>
                       <small className="text-muted text-truncate d-block" style={{ maxWidth: '280px' }}>
                         {item.description}
                       </small>
                     </td>
                     <td>
                       <span className="badge bg-secondary-subtle text-secondary small">
-                        {item.category}
+                        {item.category || 'General'}
                       </span>
                     </td>
                     <td>
                       <span
-                        className={`badge priority-${(item.priority || 'medium').toLowerCase()} small`}
+                        className={`badge priority-${String(
+                          item.priority || 'medium'
+                        ).toLowerCase()} small`}
                       >
                         {item.priority || 'Medium'}
                       </span>
@@ -258,7 +275,7 @@ const OfficerDashboard = () => {
                     <td>
                       <small className="text-secondary d-block">
                         <i className="bi bi-geo-alt text-danger me-1"></i>
-                        {item.location?.address}
+                        {item.location?.address || 'Address provided'}
                       </small>
                     </td>
                     <td>
@@ -302,7 +319,7 @@ const OfficerDashboard = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title fw-bold">
-                  Update Ticket {selectedComplaint.complaintId}
+                  Update Ticket {selectedComplaint.complaintId || ''}
                 </h5>
                 <button
                   type="button"

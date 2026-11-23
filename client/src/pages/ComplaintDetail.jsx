@@ -6,6 +6,32 @@ import StatusBadge from '../components/StatusBadge';
 import Timeline from '../components/Timeline';
 import StarRating from '../components/StarRating';
 
+// Safe date-time formatter
+const formatDateTime = (val) => {
+  if (!val) return 'N/A';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  } catch (e) {
+    return String(val);
+  }
+};
+
+const formatDateOnly = (val) => {
+  if (!val) return 'N/A';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  } catch (e) {
+    return String(val);
+  }
+};
+
 const ComplaintDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -29,10 +55,13 @@ const ComplaintDetail = () => {
   const fetchComplaintDetails = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await complaintService.getById(id);
-      if (res.success) {
+      if (res && res.success && res.complaint) {
         setComplaint(res.complaint);
-        setNewStatus(res.complaint.status);
+        setNewStatus(res.complaint.status || 'Submitted');
+      } else {
+        setError(res?.message || 'Complaint details not found');
       }
     } catch (err) {
       setError(err.message || 'Failed to load complaint details');
@@ -53,7 +82,7 @@ const ComplaintDetail = () => {
       setActionSuccess('');
       setError('');
       const res = await complaintService.updateStatus(id, newStatus, remarks);
-      if (res.success) {
+      if (res && res.success) {
         setComplaint(res.complaint);
         setActionSuccess(`Status transitioned to "${newStatus}" successfully!`);
         setRemarks('');
@@ -72,7 +101,7 @@ const ComplaintDetail = () => {
       setSubmittingFeedback(true);
       setError('');
       const res = await complaintService.submitFeedback(id, rating, feedbackComment);
-      if (res.success) {
+      if (res && res.success) {
         setComplaint(res.complaint);
         setActionSuccess('Thank you! Your feedback and rating have been recorded.');
       }
@@ -105,7 +134,15 @@ const ComplaintDetail = () => {
     );
   }
 
-  const isCitizenOwner = user?.role === 'citizen' && complaint.citizen?._id === user._id;
+  // Safe ownership check
+  const citizenId = complaint.citizen?._id || complaint.citizen;
+  const currentUserId = user?._id || user?.id;
+  const isCitizenOwner =
+    user?.role === 'citizen' &&
+    citizenId &&
+    currentUserId &&
+    citizenId.toString() === currentUserId.toString();
+
   const canUpdateStatus = user?.role === 'admin' || user?.role === 'officer';
 
   return (
@@ -135,7 +172,10 @@ const ComplaintDetail = () => {
 
       {/* Success Banner */}
       {actionSuccess && (
-        <div className="alert alert-success alert-dismissible fade show small d-flex align-items-center gap-2 mb-4" role="alert">
+        <div
+          className="alert alert-success alert-dismissible fade show small d-flex align-items-center gap-2 mb-4"
+          role="alert"
+        >
           <i className="bi bi-check-circle-fill fs-5"></i>
           <div>{actionSuccess}</div>
           <button type="button" className="btn-close" onClick={() => setActionSuccess('')}></button>
@@ -151,35 +191,38 @@ const ComplaintDetail = () => {
               <div>
                 <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
                   <span className="badge bg-light text-dark border fw-bold fs-6">
-                    {complaint.complaintId}
+                    {complaint.complaintId || 'CC-NEW'}
                   </span>
                   <span className="badge bg-secondary-subtle text-secondary">
-                    {complaint.category}
+                    {complaint.category || 'General'}
                   </span>
-                  <span className={`badge priority-${(complaint.priority || 'medium').toLowerCase()}`}>
+                  <span
+                    className={`badge priority-${String(
+                      complaint.priority || 'medium'
+                    ).toLowerCase()}`}
+                  >
                     {complaint.priority || 'Medium'} Priority
                   </span>
                 </div>
-                <h3 className="fw-bold text-dark mb-1">{complaint.title}</h3>
+                <h3 className="fw-bold text-dark mb-1">{complaint.title || 'Untitled Complaint'}</h3>
                 <div className="text-muted small">
-                  Lodge Date:{' '}
-                  {new Date(complaint.createdAt).toLocaleDateString(undefined, {
-                    dateStyle: 'full',
-                    timeStyle: 'short',
-                  })}
+                  Lodge Date: {formatDateTime(complaint.createdAt)}
                 </div>
               </div>
               <StatusBadge status={complaint.status} />
             </div>
 
             {/* Stepper Workflow Visualizer */}
-            <Timeline currentStatus={complaint.status} statusHistory={complaint.statusHistory} />
+            <Timeline
+              currentStatus={complaint.status || 'Submitted'}
+              statusHistory={complaint.statusHistory || []}
+            />
 
             {/* Problem Description */}
             <div className="mb-4">
               <h6 className="fw-bold text-secondary mb-2">Description</h6>
               <div className="p-3 bg-light rounded-3 text-dark" style={{ lineHeight: '1.6' }}>
-                {complaint.description}
+                {complaint.description || 'No description provided.'}
               </div>
             </div>
 
@@ -193,6 +236,9 @@ const ComplaintDetail = () => {
                     alt="Complaint Evidence"
                     className="img-fluid rounded"
                     style={{ maxHeight: '380px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
                   />
                 </div>
               </div>
@@ -207,7 +253,7 @@ const ComplaintDetail = () => {
                 <p className="mb-1 small">{complaint.resolutionRemarks}</p>
                 {complaint.resolvedAt && (
                   <div className="small text-muted">
-                    Resolved on: {new Date(complaint.resolvedAt).toLocaleString()}
+                    Resolved on: {formatDateTime(complaint.resolvedAt)}
                   </div>
                 )}
               </div>
@@ -232,7 +278,7 @@ const ComplaintDetail = () => {
                       </p>
                     )}
                     <span className="text-muted small">
-                      Submitted on: {new Date(complaint.feedback.submittedAt).toLocaleDateString()}
+                      Submitted on: {formatDateOnly(complaint.feedback.submittedAt)}
                     </span>
                   </div>
                 ) : isCitizenOwner ? (
@@ -330,12 +376,12 @@ const ComplaintDetail = () => {
             </h6>
             <div className="small mb-2">
               <span className="text-muted d-block">Street Address:</span>
-              <strong className="text-dark">{complaint.location?.address}</strong>
+              <strong className="text-dark">{complaint.location?.address || 'Not specified'}</strong>
             </div>
             {complaint.location?.landmark && (
               <div className="small mb-2">
                 <span className="text-muted d-block">Landmark:</span>
-                <span className="text-secondary">{complaint.location?.landmark}</span>
+                <span className="text-secondary">{complaint.location.landmark}</span>
               </div>
             )}
             <div className="row g-2 small">
@@ -357,12 +403,22 @@ const ComplaintDetail = () => {
             </h6>
             {complaint.assignedOfficer ? (
               <div className="small">
-                <div className="fw-bold text-dark fs-6">{complaint.assignedOfficer.name}</div>
-                <div className="text-primary fw-semibold">{complaint.assignedOfficer.department}</div>
-                <div className="text-muted mt-2">
-                  <i className="bi bi-envelope me-1"></i> {complaint.assignedOfficer.email}
+                <div className="fw-bold text-dark fs-6">
+                  {typeof complaint.assignedOfficer === 'object'
+                    ? complaint.assignedOfficer.name
+                    : 'Field Officer'}
                 </div>
-                {complaint.assignedOfficer.phone && (
+                <div className="text-primary fw-semibold">
+                  {typeof complaint.assignedOfficer === 'object'
+                    ? complaint.assignedOfficer.department
+                    : 'Field Operations'}
+                </div>
+                {typeof complaint.assignedOfficer === 'object' && complaint.assignedOfficer.email && (
+                  <div className="text-muted mt-2">
+                    <i className="bi bi-envelope me-1"></i> {complaint.assignedOfficer.email}
+                  </div>
+                )}
+                {typeof complaint.assignedOfficer === 'object' && complaint.assignedOfficer.phone && (
                   <div className="text-muted mt-1">
                     <i className="bi bi-telephone me-1"></i> {complaint.assignedOfficer.phone}
                   </div>
@@ -382,11 +438,15 @@ const ComplaintDetail = () => {
                 <i className="bi bi-person-fill text-secondary"></i> Complainant Information
               </h6>
               <div className="small">
-                <div className="fw-bold text-dark">{complaint.citizen.name}</div>
-                <div className="text-muted mt-1">
-                  <i className="bi bi-envelope me-1"></i> {complaint.citizen.email}
+                <div className="fw-bold text-dark">
+                  {typeof complaint.citizen === 'object' ? complaint.citizen.name : 'Citizen'}
                 </div>
-                {complaint.citizen.phone && (
+                {typeof complaint.citizen === 'object' && complaint.citizen.email && (
+                  <div className="text-muted mt-1">
+                    <i className="bi bi-envelope me-1"></i> {complaint.citizen.email}
+                  </div>
+                )}
+                {typeof complaint.citizen === 'object' && complaint.citizen.phone && (
                   <div className="text-muted mt-1">
                     <i className="bi bi-telephone me-1"></i> {complaint.citizen.phone}
                   </div>

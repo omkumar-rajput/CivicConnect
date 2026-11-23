@@ -4,6 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { complaintService } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 
+const formatDate = (val) => {
+  if (!val) return 'N/A';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  } catch (e) {
+    return String(val);
+  }
+};
+
 const CitizenDashboard = () => {
   const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
@@ -15,12 +26,16 @@ const CitizenDashboard = () => {
   const fetchComplaints = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await complaintService.getMyComplaints();
-      if (res.success) {
+      if (res && res.success) {
         setComplaints(res.complaints || []);
+      } else {
+        setComplaints([]);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch complaints');
+      setComplaints([]);
     } finally {
       setLoading(false);
     }
@@ -30,22 +45,26 @@ const CitizenDashboard = () => {
     fetchComplaints();
   }, []);
 
-  // Filter complaints
-  const filteredComplaints = complaints.filter((c) => {
+  // Filter complaints safely
+  const filteredComplaints = (complaints || []).filter((c) => {
+    if (!c) return false;
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+    const searchLower = (searchTerm || '').trim().toLowerCase();
     const matchesSearch =
-      searchTerm === '' ||
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.complaintId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.location?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+      searchLower === '' ||
+      (c.title && c.title.toLowerCase().includes(searchLower)) ||
+      (c.complaintId && c.complaintId.toLowerCase().includes(searchLower)) ||
+      (c.category && c.category.toLowerCase().includes(searchLower)) ||
+      (c.location?.address && c.location.address.toLowerCase().includes(searchLower));
     return matchesStatus && matchesSearch;
   });
 
-  // Calculate metrics
-  const totalCount = complaints.length;
-  const inProgressCount = complaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length;
-  const resolvedCount = complaints.filter((c) => c.status === 'Resolved').length;
+  // Calculate metrics safely
+  const totalCount = (complaints || []).length;
+  const inProgressCount = (complaints || []).filter(
+    (c) => c && (c.status === 'In Progress' || c.status === 'Assigned')
+  ).length;
+  const resolvedCount = (complaints || []).filter((c) => c && c.status === 'Resolved').length;
 
   return (
     <div className="container py-4">
@@ -53,7 +72,7 @@ const CitizenDashboard = () => {
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
         <div>
           <span className="badge bg-light text-primary border mb-1">Citizen Portal</span>
-          <h2 className="fw-bold text-dark mb-1">Welcome back, {user?.name}!</h2>
+          <h2 className="fw-bold text-dark mb-1">Welcome back, {user?.name || 'Citizen'}!</h2>
           <p className="text-secondary small mb-0">
             Monitor the status of your reported grievances and track civic repairs in real-time.
           </p>
@@ -183,10 +202,12 @@ const CitizenDashboard = () => {
                       {item.complaintId || 'CC-NEW'}
                     </span>
                     <span className="badge bg-secondary-subtle text-secondary small">
-                      {item.category}
+                      {item.category || 'General'}
                     </span>
                     <span
-                      className={`badge priority-${(item.priority || 'medium').toLowerCase()} small`}
+                      className={`badge priority-${String(
+                        item.priority || 'medium'
+                      ).toLowerCase()} small`}
                     >
                       {item.priority || 'Medium'} Priority
                     </span>
@@ -201,7 +222,7 @@ const CitizenDashboard = () => {
                         to={`/complaint/${item._id}`}
                         className="text-dark text-decoration-none hover-primary"
                       >
-                        {item.title}
+                        {item.title || 'Untitled Complaint'}
                       </Link>
                     </h5>
                     <p className="text-secondary small mb-2 text-truncate" style={{ maxHeight: '42px' }}>
@@ -210,14 +231,12 @@ const CitizenDashboard = () => {
                     <div className="d-flex flex-wrap gap-3 text-muted small">
                       <span>
                         <i className="bi bi-geo-alt text-danger me-1"></i>
-                        {item.location?.address}
+                        {item.location?.address || 'Location provided'}
                         {item.location?.landmark ? ` (Near ${item.location.landmark})` : ''}
                       </span>
                       <span>
                         <i className="bi bi-calendar3 me-1"></i>
-                        {new Date(item.createdAt).toLocaleDateString(undefined, {
-                          dateStyle: 'medium',
-                        })}
+                        {formatDate(item.createdAt)}
                       </span>
                     </div>
                   </div>
@@ -226,7 +245,11 @@ const CitizenDashboard = () => {
                     {item.assignedOfficer ? (
                       <div className="small mb-2 text-start text-md-end">
                         <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Assigned Officer</span>
-                        <span className="fw-semibold text-dark">{item.assignedOfficer.name}</span>
+                        <span className="fw-semibold text-dark">
+                          {typeof item.assignedOfficer === 'object'
+                            ? item.assignedOfficer.name
+                            : 'Field Officer'}
+                        </span>
                       </div>
                     ) : (
                       <div className="small mb-2 text-start text-md-end text-muted">
@@ -256,7 +279,7 @@ const CitizenDashboard = () => {
                       </Link>
                     )}
                     <span className="text-muted">
-                      Resolved on: {new Date(item.resolvedAt || item.updatedAt).toLocaleDateString()}
+                      Resolved on: {formatDate(item.resolvedAt || item.updatedAt)}
                     </span>
                   </div>
                 )}

@@ -2,7 +2,22 @@ import React from 'react';
 
 const steps = ['Submitted', 'Pending', 'Assigned', 'In Progress', 'Resolved'];
 
-const Timeline = ({ currentStatus, statusHistory = [] }) => {
+// Safe date formatter that will never throw
+const formatStepTime = (val) => {
+  if (!val) return '';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  } catch (e) {
+    return '';
+  }
+};
+
+const Timeline = ({ currentStatus = 'Submitted', statusHistory = [] }) => {
   const isRejected = currentStatus === 'Rejected';
   const currentIndex = steps.indexOf(currentStatus);
 
@@ -17,6 +32,8 @@ const Timeline = ({ currentStatus, statusHistory = [] }) => {
       </div>
     );
   }
+
+  const safeHistory = Array.isArray(statusHistory) ? statusHistory.filter(Boolean) : [];
 
   return (
     <div className="workflow-stepper-container my-4 px-2">
@@ -41,13 +58,13 @@ const Timeline = ({ currentStatus, statusHistory = [] }) => {
       </div>
 
       {/* History logs card */}
-      {statusHistory && statusHistory.length > 0 && (
+      {safeHistory.length > 0 && (
         <div className="mt-4 p-3 bg-light rounded-3 border">
           <h6 className="fw-bold mb-3 d-flex align-items-center gap-2 text-secondary">
             <i className="bi bi-clock-history"></i> Resolution Audit History
           </h6>
           <div className="timeline-list">
-            {statusHistory.map((item, idx) => (
+            {safeHistory.map((item, idx) => (
               <div
                 key={idx}
                 className="d-flex align-items-start gap-3 pb-3 mb-3 border-bottom border-light-subtle last:border-0 last:pb-0 last:mb-0"
@@ -60,12 +77,9 @@ const Timeline = ({ currentStatus, statusHistory = [] }) => {
                 </div>
                 <div className="flex-grow-1">
                   <div className="d-flex justify-content-between align-items-center flex-wrap">
-                    <span className="fw-semibold text-dark">{item.status}</span>
+                    <span className="fw-semibold text-dark">{item.status || 'Updated'}</span>
                     <span className="small text-muted">
-                      {new Date(item.updatedAt).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
+                      {formatStepTime(item.updatedAt)}
                     </span>
                   </div>
                   {item.remarks && (

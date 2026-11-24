@@ -32,6 +32,17 @@ const formatDateOnly = (val) => {
   }
 };
 
+// Resolve relative server upload paths (/uploads/...) to live backend domain
+const resolveImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const backendBase = 'https://civicconnect-api-shuf.onrender.com';
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendBase}${cleanPath}`;
+};
+
 const ComplaintDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -232,12 +243,14 @@ const ComplaintDetail = () => {
                 <h6 className="fw-bold text-secondary mb-2">Photographic Evidence</h6>
                 <div className="border rounded-3 overflow-hidden bg-light text-center p-2">
                   <img
-                    src={complaint.imageUrl}
+                    src={resolveImageUrl(complaint.imageUrl)}
                     alt="Complaint Evidence"
                     className="img-fluid rounded"
                     style={{ maxHeight: '380px', objectFit: 'contain' }}
                     onError={(e) => {
-                      e.target.style.display = 'none';
+                      e.target.onerror = null;
+                      e.target.src =
+                        'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800';
                     }}
                   />
                 </div>

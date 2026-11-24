@@ -26,9 +26,11 @@ exports.createComplaint = async (req, res) => {
       });
     }
 
-    // Determine image URL: from uploaded file via multer or from string
+    // Determine image URL: base64 direct storage, uploaded file via multer, or URL string
     let finalImageUrl = '';
-    if (req.file) {
+    if (bodyImageUrl && (bodyImageUrl.startsWith('data:image') || bodyImageUrl.startsWith('http'))) {
+      finalImageUrl = bodyImageUrl;
+    } else if (req.file) {
       finalImageUrl = `/uploads/${req.file.filename}`;
     } else if (bodyImageUrl) {
       finalImageUrl = bodyImageUrl;

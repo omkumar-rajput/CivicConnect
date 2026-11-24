@@ -27,6 +27,7 @@ const NewComplaint = () => {
   });
 
   const [imageFile, setImageFile] = useState(null);
+  const [imageBase64, setImageBase64] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,6 +64,14 @@ const NewComplaint = () => {
       }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+
+      // Also read as Base64 data URL for durable storage in MongoDB Atlas
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageBase64(reader.result);
+      };
+      reader.readAsDataURL(file);
+
       setError('');
     }
   };
@@ -94,6 +103,9 @@ const NewComplaint = () => {
 
       if (imageFile) {
         data.append('image', imageFile);
+        if (imageBase64) {
+          data.append('imageUrl', imageBase64);
+        }
       } else if (imageUrlInput.trim()) {
         data.append('imageUrl', imageUrlInput.trim());
       }
